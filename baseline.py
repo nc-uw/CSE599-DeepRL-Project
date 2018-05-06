@@ -62,9 +62,9 @@ BanditA = {options:0 for options in options_pa}
 BanditB = {}
 BanditB = {options:0 for options in options_pb}
 
-total_iters=20000
+total_iters=1000
 gamma = 1.
-epsilon = 0.7
+epsilon = 1.
 alpha = 0.3
 saturation = 90
 
@@ -75,9 +75,10 @@ BidB = []
 P=[]
 
 for i in range(total_iters):
+    print ('iter', i)
     max_bid_pa = list(BanditA.keys())[list(BanditA.values()).index(max(BanditA.values()))]
     rndm_bid_pa = rdm.choice(options_pa)
-    if rdm.uniform(0,1) <= epsilon:
+    if rdm.uniform(0,1) <= (1 - epsilon):
         bid_pa = max_bid_pa
         print ("max A", bid_pa)
     else:
@@ -86,7 +87,7 @@ for i in range(total_iters):
 
     max_bid_pb = list(BanditB.keys())[list(BanditB.values()).index(max(BanditB.values()))]
     rndm_bid_pb = rdm.choice(options_pb)
-    if rdm.uniform(0,1) <= epsilon:
+    if rdm.uniform(0,1) <= (1 - epsilon):
         bid_pb = max_bid_pb
         print ("max B", bid_pb)
     else:
@@ -101,8 +102,8 @@ for i in range(total_iters):
     
     BanditA[bid_pa] = (1 - alpha)*BanditA[bid_pa] + alpha*(ra + gamma*bid_pa)
     BanditB[bid_pb] = (1 - alpha)*BanditB[bid_pb] + alpha*(rb + gamma*bid_pb)
-    #epsilon = epsilon - epsilon*(float((i*2))/float(total_iters))
-    #print ('epsilon', epsilon)
+    epsilon = epsilon - epsilon*(float((i*0.1))/float(total_iters))
+    print ('epsilon', epsilon)
     RewA.append(ra)
     RewB.append(rb)
     BidA.append(bid_pa)
@@ -110,10 +111,13 @@ for i in range(total_iters):
     P.append(p)
 
 plt.figure()
-plt.plot(RewA[19000:],'r--')
+plt.plot(RewA,'r--', RewB, 'b--')
 #, RewB, 'bs')
 plt.show()
 
+plt.figure()
+plt.plot(BidA,'r--', BidB, 'b--')
+plt.show()
         
     
     
