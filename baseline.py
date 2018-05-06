@@ -77,7 +77,7 @@ P=[]
 for i in range(total_iters):
     max_bid_pa = list(BanditA.keys())[list(BanditA.values()).index(max(BanditA.values()))]
     rndm_bid_pa = rdm.choice(options_pa)
-    if rdm.uniform(0,1) >= epsilon:
+    if rdm.uniform(0,1) <= epsilon:
         bid_pa = max_bid_pa
         print ("max A", bid_pa)
     else:
@@ -86,7 +86,7 @@ for i in range(total_iters):
 
     max_bid_pb = list(BanditB.keys())[list(BanditB.values()).index(max(BanditB.values()))]
     rndm_bid_pb = rdm.choice(options_pb)
-    if rdm.uniform(0,1) >= epsilon:
+    if rdm.uniform(0,1) <= epsilon:
         bid_pb = max_bid_pb
         print ("max B", bid_pb)
     else:
@@ -108,6 +108,11 @@ for i in range(total_iters):
     BidA.append(bid_pa)
     BidB.append(bid_pb)
     P.append(p)
+
+plt.figure()
+plt.plot(RewA[19000:],'r--')
+#, RewB, 'bs')
+plt.show()
 
         
     
