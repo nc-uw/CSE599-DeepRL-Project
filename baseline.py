@@ -62,10 +62,10 @@ BanditA = {options:0 for options in options_pa}
 BanditB = {}
 BanditB = {options:0 for options in options_pb}
 
-total_iters=1000
-gamma = 1.
-epsilon = 1.
-alpha = 0.3
+total_iters=2500
+gamma = 0.8
+epsilon = 0.975
+alpha = 0.5
 saturation = 90
 
 RewA = []
@@ -78,7 +78,7 @@ for i in range(total_iters):
     print ('iter', i)
     max_bid_pa = list(BanditA.keys())[list(BanditA.values()).index(max(BanditA.values()))]
     rndm_bid_pa = rdm.choice(options_pa)
-    if rdm.uniform(0,1) <= (1 - epsilon):
+    if rdm.uniform(0,1) <= (epsilon):
         bid_pa = max_bid_pa
         print ("max A", bid_pa)
     else:
@@ -87,7 +87,7 @@ for i in range(total_iters):
 
     max_bid_pb = list(BanditB.keys())[list(BanditB.values()).index(max(BanditB.values()))]
     rndm_bid_pb = rdm.choice(options_pb)
-    if rdm.uniform(0,1) <= (1 - epsilon):
+    if rdm.uniform(0,1) <= (epsilon):
         bid_pb = max_bid_pb
         print ("max B", bid_pb)
     else:
@@ -100,9 +100,9 @@ for i in range(total_iters):
     ra = p*bid_pa - mca*bid_pa
     rb = p*bid_pb - mcb*bid_pb
     
-    BanditA[bid_pa] = (1 - alpha)*BanditA[bid_pa] + alpha*(ra + gamma*bid_pa)
-    BanditB[bid_pb] = (1 - alpha)*BanditB[bid_pb] + alpha*(rb + gamma*bid_pb)
-    epsilon = epsilon - epsilon*(float((i*0.1))/float(total_iters))
+    BanditA[bid_pa] = (1 - alpha)*BanditA[bid_pa] + alpha*(ra + gamma*max_bid_pa)
+    BanditB[bid_pb] = (1 - alpha)*BanditB[bid_pb] + alpha*(rb + gamma*max_bid_pb)
+    #epsilon = epsilon - epsilon*(float((i*0.025))/float(total_iters))
     print ('epsilon', epsilon)
     RewA.append(ra)
     RewB.append(rb)
@@ -111,12 +111,22 @@ for i in range(total_iters):
     P.append(p)
 
 plt.figure()
-plt.plot(RewA,'r--', RewB, 'b--')
+plt.title('Reward trajectory for 2 n-armed bandits \nExploration: 0.975-greedy, Alpha: 0.5, Discount Factor: 0.8')
+plt.plot(RewA,'r--', label = 'Agent A')
+plt.plot(RewB, 'b--', label = 'Agent B')
+plt.ylabel('Net Revenue')
+plt.xlabel('Iterations')
+plt.legend()
 #, RewB, 'bs')
 plt.show()
 
 plt.figure()
-plt.plot(BidA,'r--', BidB, 'b--')
+plt.title('Bid trajectory for 2 n-armed bandits \nExploration: 0.975-greedy, Alpha: 0.5, Discount Factor: 0.8')
+plt.plot(BidA,'r--', label = 'Agent A')
+plt.plot(BidB, 'b--', label = 'Agent B')
+plt.ylabel('Qty Bid')
+plt.xlabel('Iterations')
+plt.legend()
 plt.show()
         
     
