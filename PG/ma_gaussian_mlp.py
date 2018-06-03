@@ -42,7 +42,7 @@ class MLP:
         self.model.add_module('fc_1', nn.Linear(hidden_sizes[0], hidden_sizes[1]))
         self.model.add_module('tanh_1', nn.Tanh())
         self.model.add_module('fc_2', nn.Linear(hidden_sizes[1], self.m))
-        #self.model.add_module('tanh_2', nn.Tanh())
+        self.model.add_module('tanh_2', nn.Tanh())
         # make weights small
         for param in list(self.model.parameters())[-2:]:  # only last layer
            param.data = (1.0/hidden_sizes[1]) * param.data
@@ -57,7 +57,7 @@ class MLP:
         self.old_model.add_module('old_fc_1', nn.Linear(hidden_sizes[0], hidden_sizes[1]))
         self.old_model.add_module('old_tanh_1', nn.Tanh())
         self.old_model.add_module('old_fc_2', nn.Linear(hidden_sizes[1], self.m))
-        #self.old_model.add_module('old_tanh_2', nn.Tanh())
+        self.old_model.add_module('old_tanh_2', nn.Tanh())
         self.old_log_std = Variable(torch.ones(self.m) * init_log_std)
         self.old_params = list(self.old_model.parameters()) + [self.old_log_std]
         for idx, param in enumerate(self.old_params):

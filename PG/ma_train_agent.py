@@ -45,14 +45,14 @@ def train_agent(N, L, agent,
                 best_policy[variables[j]] = copy.deepcopy(agent.policy[variables[j]])
                 best_perf[variables[j]] = train_curve[variables[j]][i-1]
         args = dict(T=T, sample_mode=sample_mode, gamma=gamma, gae_lambda=gae_lambda)
-        stats = agent.train_step(**args)
+        stats, paths = agent.train_step(**args)
         print ("\n\n\nstats", stats)
         for j in range(N):
             train_curve[variables[j]][i] = stats[variables[j]][0]
         if evaluation_rollouts is not None and evaluation_rollouts > 0:
             print("Performing evaluation rollouts ........")
-            eval_paths = sample_paths(N, T=10, L=100, policy=agent.policy, mode='evaluation')
+            eval_paths = sample_paths(N, T, L, policy=agent.policy, mode='evaluation')
             for j in range(N):        
                 mean_pol_perf[variables[j]] = np.mean([np.sum(path['rewards'][variables[j]]) for path in eval_paths])
-        
-        #return paths
+        print ('paths', paths)
+    return paths

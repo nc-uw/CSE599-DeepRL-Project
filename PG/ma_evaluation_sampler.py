@@ -90,7 +90,8 @@ def do_evaluation_rollout(N, T, L, policy):
 
         paths.append(path)
         
-    print("====== Evaluation finished ======")        
+    print("====== Evaluation finished ======")  
+    print ('eval_action', action)
     return paths
 
 def do_evaluation_rollout_star(args_list):

@@ -29,7 +29,7 @@ agent = BatchREINFORCE(N, policy, baseline, learn_rate=0.1, seed=SEED)
 
 paths = train_agent(N, L, agent=agent,
             seed=SEED,
-            niter=50,
+            niter=20,
             gamma=0.9,
             gae_lambda=0.5,
             sample_mode='trajectories',

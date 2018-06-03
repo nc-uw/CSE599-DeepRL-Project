@@ -74,14 +74,14 @@ def do_rollout(N, T, L, policy):
                     yyy = -1+1e-6 
                     
                 #print ("network-output", yyy)                
-                #a = np.arctanh(yyy)*mmm + ccc
-                '''
+                
+                a = np.arctanh(yyy)*mmm + ccc
                 if a > amax:
-                    a = amax
+                    a = [amax]
                 elif a < amin:
-                    a = amin
-                '''
-                #print ("action",a)
+                    a = [amin]
+                
+                #print ("action", a)
                 action.append(a)
                 actions[variables[i]] = np.append(actions[variables[i]],a)
                 agent_info[i].append(info)

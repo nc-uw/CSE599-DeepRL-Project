@@ -113,7 +113,7 @@ class BatchREINFORCE:
         eval_statistics.append(T)
         # fit baseline
         error_before, error_after = self.baseline.fit(paths, return_errors=True)
-        return eval_statistics
+        return eval_statistics, paths
 
     # ----------------------------------------------------------
     def train_from_paths(self, paths):
