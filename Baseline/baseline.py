@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Tue May 15 19:13:19 2018
 
@@ -47,17 +46,19 @@ mca = 25
 mcb = 25
 mcc = 25
 mcd = 25
+saturation = 30*N
 
 #choose pa, pb
 options_pa = [10., 12.5, 15, 17.5, 20., 21.67, 22.5, 25, 27.5, 30]
 options_pb = [10., 12.5, 15, 17.5, 20., 21.67, 22.5, 25, 27.5, 30]
 options_pc = [10., 12.5, 15, 17.5, 20., 21.67, 22.5, 25, 27.5, 30]
 options_pd = [10., 12.5, 15, 17.5, 20., 21.67, 22.5, 25, 27.5, 30]
-
+'''
 options_pd = list(np.arange(15,61)
 options_pd = list(np.arange(15,61)
 options_pd = np.arange(15,61)
 options_pd = np.arange(15,61)
+'''
 
 #options_pb = [6., 8., 10., 12., 14., 16., 18., 20]
 
