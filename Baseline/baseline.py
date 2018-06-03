@@ -60,17 +60,22 @@ if __name__ == '__main__':
             bid = bandit['bids'][-1]
             max_bid = bandit['max_bids'][-1]
             reward = (p - mc) * bid
-            bandit['reward'].append(reward)
+            if i % 100 == 0:
+                bandit['reward'].append(reward)
             bandit['value_function'][bid] = (1 - alpha) * bandit['value_function'][bid] + alpha * (reward + gamma * max_bid)
 
         epsilon = epsilon - epsilon * (float((i * 0.005)) / float(total_iters))
         print('epsilon', epsilon)
         P.append(p)
 
+    for name in bandits:
+        print bandits[name]['value_function']
+
+    axis = np.arange(0, total_iters, 100)
     plt.figure()
     plt.title('Reward trajectory for 4 n-armed bandits \nExploration: decaying, Alpha: 0.2, Discount Factor: 0.9')
     for name in bandits:
-        plt.plot(bandits[name]['reward'], label=name)
+        plt.plot(axis, bandits[name]['reward'], label=name)
     plt.ylabel('Net Revenue')
     plt.xlabel('Iterations')
     plt.legend()
@@ -79,7 +84,9 @@ if __name__ == '__main__':
     plt.figure()
     plt.title('Bid trajectory for 4 n-armed bandits \nExploration: 0.975-greedy, Alpha: 0.2, Discount Factor: 0.9')
     for name in bandits:
-        plt.plot(bandits[name]['bids'], label=name)
+        bids = bandits[name]['bids']
+        bids = [bids[i] for i in axis]
+        plt.plot(axis, bids, label=name)
     plt.ylabel('Qty Bid')
     plt.xlabel('Iterations')
     plt.legend()
