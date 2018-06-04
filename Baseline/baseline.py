@@ -9,8 +9,8 @@ def inverse_demand(d, saturation):
     return p
 
 total_iters = 5000
-gamma = 0
-epsilon = 0.1
+gamma = 0.9
+epsilon = 1
 alpha = 0.1
 
 
@@ -19,11 +19,12 @@ if __name__ == '__main__':
     mc = int(sys.argv[2])
     min_quantity = int(sys.argv[3])
     max_quantity = int(sys.argv[4])
+    saturation = int(sys.argv[5])
 
     P = []
     bandits = dict()
     for i in range(N):
-        name = 'actions_' + chr(ord('a') + i)
+        name = 'Agent_' + chr(ord('A') + i)
         bandits[name] = dict()
         bandits[name]['actions'] = np.arange(min_quantity, max_quantity, 1.0)
         bandits[name]['value_function'] = {action: 0 for action in bandits[name]['actions']}
@@ -50,8 +51,11 @@ if __name__ == '__main__':
             bids.append(bid)
 
         d = sum(bids)
+        # d = 0
+        # for bid in bids:
+        #     d += bid ** 2
+        # d = np.sqrt(d)
         #d = math.sqrt(bids[0] ** 2 + bids[1] ** 2 + bids[2] ** 2 + bids[3] ** 2)
-        saturation = 25 * N
         p = inverse_demand(d, saturation)
         print('price', p)
 
@@ -60,42 +64,55 @@ if __name__ == '__main__':
             bid = bandit['bids'][-1]
             max_bid = bandit['max_bids'][-1]
             reward = (p - mc) * bid
-            if i % 100 == 0:
-                bandit['reward'].append(reward)
+            bandit['reward'].append(reward)
             bandit['value_function'][bid] = (1 - alpha) * bandit['value_function'][bid] + alpha * (reward + gamma * max_bid)
-
-        epsilon = epsilon - epsilon * (float((i * 0.005)) / float(total_iters))
+            #bandit['value_function'][bid] = bandit['value_function'][bid] + alpha (reward - bandit['value_function'][bid])
+        epsilon = max(epsilon - epsilon * (float((i * 0.005)) / float(total_iters)), 0.001)
         print('epsilon', epsilon)
         P.append(p)
 
-    for name in bandits:
-        print bandits[name]['value_function']
+    # for name in bandits:
+    #     print bandits[name]['value_function']
 
-    axis = np.arange(0, total_iters, 100)
+    axis = np.arange(100, total_iters, 100)
+
     plt.figure()
-    plt.title('Reward trajectory for 4 n-armed bandits \nExploration: decaying, Alpha: 0.2, Discount Factor: 0.9')
-    for name in bandits:
-        plt.plot(axis, bandits[name]['reward'], label=name)
+    plt.title('Reward trajectory for ' + str(N) + ' n-armed bandits \nExploration: decaying, Alpha: ' + str(alpha) + ', Discount Factor: ' + str(gamma))
+    for name in sorted(bandits.keys()):
+        rewards = bandits[name]['reward']
+        graph_reward = [0]
+        avgs = [np.mean(rewards[i-100:i]) for i in axis]
+        graph_reward += avgs
+        axis = np.insert(axis, 0, 0)
+        plt.plot(axis, graph_reward, label=name)
+        axis = np.arange(100, total_iters, 100)
     plt.ylabel('Net Revenue')
     plt.xlabel('Iterations')
+    plt.ylim(4000, 6500)
     plt.legend()
     plt.show()
 
     plt.figure()
-    plt.title('Bid trajectory for 4 n-armed bandits \nExploration: 0.975-greedy, Alpha: 0.2, Discount Factor: 0.9')
-    for name in bandits:
+    plt.title('Bid trajectory for ' + str(N) + ' n-armed bandits \nExploration: decaying, Alpha: ' + str(alpha) + ', Discount Factor: ' + str(gamma))
+    for name in sorted(bandits.keys()):
         bids = bandits[name]['bids']
-        bids = [bids[i] for i in axis]
-        plt.plot(axis, bids, label=name)
+        graph_bid = [bids[0]]
+        avgs = [np.mean(bids[i-100:i]) for i in axis]
+        graph_bid += avgs
+        axis = np.insert(axis, 0, 0)
+        plt.plot(axis, graph_bid, label=name)
+        axis = np.arange(100, total_iters, 100)
     plt.ylabel('Qty Bid')
     plt.xlabel('Iterations')
+    plt.ylim(5, 35)
     plt.legend()
     plt.show()
 
     plt.figure()
-    plt.title('Price')
+    plt.title('Market Price')
     plt.plot(P, 'k--', label='Cournot Price')
     plt.ylabel('Price')
     plt.xlabel('Iterations')
     plt.legend()
+    plt.ylim(0, 300)
     plt.show()
