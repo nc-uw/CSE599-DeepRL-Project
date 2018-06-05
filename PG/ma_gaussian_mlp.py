@@ -122,10 +122,13 @@ class MLP:
         obs_var = Variable(torch.from_numpy(observations).float(), requires_grad=False)
         act_var = Variable(torch.from_numpy(actions).float(), requires_grad=False)
         
-        mean = self.model(obs_var)
+        
+        ##UMMMMMMM
+        mean = model(obs_var)
+        #mean = self.model(obs_var)
         #mean = policy[i].old_model(obs_var)
         #mean = policy[i].model(obs_var)
-        zs = (act_var - mean) / torch.exp(self.log_std)
+        zs = (act_var - mean) / (torch.exp(log_std))
         #zs = (act_var - mean) / torch.exp(policy[i].old_log_std)
         #zs = (act_var - mean) / torch.exp(policy[i].log_std)
         LL = - 0.5 * torch.sum(zs ** 2, dim=1) + \

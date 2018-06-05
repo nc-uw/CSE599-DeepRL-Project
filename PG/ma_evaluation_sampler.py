@@ -19,6 +19,11 @@ def rev(price, mc, x):
 
 def do_evaluation_rollout(N, T, L, policy):
     
+    amax = 60
+    amin= 10
+    m_slope = (amax-amin)/2
+    c_intercept = (amax+amin)/2
+    
     variables = [i for i in range(N)]
     L = min(L, 100)
     paths = []
@@ -47,6 +52,7 @@ def do_evaluation_rollout(N, T, L, policy):
         while l < L:
             #print('l',l)
             action=[]
+            next_o = []
             for i in range(N):
                 inp = np.append(o,p)
                 if l == 0:
@@ -54,26 +60,47 @@ def do_evaluation_rollout(N, T, L, policy):
                 else:
                     inp_nn[variables[i]] = np.vstack((inp_nn[variables[i]],np.array(inp)))
                 _, info = policy[i].get_action(inp)
-                a = info['evaluation']
-                action.append(a)            
+                x = info['evaluation']
+                
+                if x >= 1.:
+                    x = [1-1e-6]
+                elif x <= -1:
+                    x = [-1+1e-6]
+                 
+                #print ("network-output", yyy)                
+                
+                a = np.array(x)*m_slope + c_intercept
+                
+                if a > amax:
+                    a = [amax]
+                elif a < amin:
+                    a = [amin]
+                
+                #print ('a',a)
+                #print ('x',x)
+                action.append(a)
+                next_o.append(x)
                 actions[variables[i]] = np.append(actions[variables[i]],a)
                 agent_info[i].append(info)
                         
             action = np.ravel(action)
+            next_o = np.ravel(next_o)
+            #print ('action', action)
+            #print ('next_o', next_o)
             p = pr(45., N, action)
             price.append(p)
-            reward = rev(p, 15, action)
+            reward = rev(p, 25, action)
             
             for i in range(N):
                 rewards[variables[i]] = np.append(rewards[variables[i]],reward[i])
                 if l < L-1:
                     observations[variables[i]] = np.append(observations[variables[i]],action[i])
-                    done[variables[i]] = np.append(done[variables[i]],False)
+                    #done[variables[i]] = np.append(done[variables[i]],False)
                     done[variables[i]] = False
                 else:
-                    done[variables[i]] = np.append(done[variables[i]],True)
+                    #done[variables[i]] = np.append(done[variables[i]],True)
                     done[variables[i]] = True
-            o = action
+            o = next_o
             l += 1
             
         for i in range(N):

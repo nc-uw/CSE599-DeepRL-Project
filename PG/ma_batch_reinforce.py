@@ -14,14 +14,14 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-# samplers
+#samplers
 import ma_trajectory_sampler as trajectory_sampler
 import ma_process_samples as process_samples
 
 class BatchREINFORCE:
     def __init__(self, N, policy, baseline,
                  learn_rate=0.01,
-                 seed=None,):
+                 seed=None):
 
         self.N = N
         self.policy = policy
@@ -40,6 +40,7 @@ class BatchREINFORCE:
         #new_dist_info = [LL, mean, policy[i].log_std]
         LR = self.policy[i].likelihood_ratio(new_dist_info, old_dist_info)
         surr = torch.mean(LR*adv_var)
+        print ('\n\nsurr', surr, 'LR', LR, 'LR_compute', torch.exp(new_dist_info[0] - old_dist_info[0]), 'new_dist_info', new_dist_info[0], 'old_dist_info', old_dist_info[0])
         return surr
 
     def kl_old_new(self, i, observations, actions):
@@ -109,11 +110,11 @@ class BatchREINFORCE:
         #paths = process_samples.compute_advantages(N, paths, baseline, gamma=0.9, gae_lambda=0.98, normalize=False)
         #print ("\n\n\npaths", paths)
         # train from paths
-        eval_statistics = self.train_from_paths(paths)
+        eval_statistics, optimization_stats = self.train_from_paths(paths)
         eval_statistics.append(T)
         # fit baseline
         error_before, error_after = self.baseline.fit(paths, return_errors=True)
-        return eval_statistics, paths
+        return eval_statistics, optimization_stats, paths
 
     # ----------------------------------------------------------
     def train_from_paths(self, paths):
@@ -127,7 +128,6 @@ class BatchREINFORCE:
         std_return = {}
         min_return = {}
         max_return = {}
-        base_stats = {}
         running_score = {}
         for i in range(self.N):
             running_score[self.variables[i]] = self.running_score_init
@@ -146,15 +146,14 @@ class BatchREINFORCE:
             std_return[self.variables[i]] = np.std(path_returns[self.variables[i]])
             min_return[self.variables[i]] = np.amin(path_returns[self.variables[i]])
             max_return[self.variables[i]] = np.amax(path_returns[self.variables[i]])
-            base_stats[self.variables[i]] = [mean_return[self.variables[i]], std_return[self.variables[i]], min_return[self.variables[i]], max_return[self.variables[i]]]
-            running_score[self.variables[i]] = mean_return if running_score[self.variables[i]] is None else \
+            #base_stats[self.variables[i]] = [mean_return[self.variables[i]], std_return[self.variables[i]], min_return[self.variables[i]], max_return[self.variables[i]]]
+            running_score[self.variables[i]] = mean_return[self.variables[i]] if running_score[self.variables[i]] is None else \
                                  0.9*running_score[self.variables[i]] + 0.1*mean_return[self.variables[i]]  # approx avg of last 10 iters
             '''
             running_score[variables[i]] = mean_return[variables[i]] if running_score[variables[i]] is None else \
                                  0.9*running_score[variables[i]] + 0.1*mean_return[variables[i]]  # approx avg of last 10 iters
             '''
-        base_stats = [mean_return, std_return, min_return, max_return]
-        
+        base_stats = [mean_return, running_score]
         # Optimization algorithm
         # --------------------------
         '''
@@ -181,8 +180,10 @@ class BatchREINFORCE:
             self.policy[i].set_param_values(new_params[self.variables[i]], set_new=True, set_old=True)
             #policy[i].set_param_values(new_params[variables[i]], set_new=True, set_old=True)
             surr_improvement[self.variables[i]] = new_surr[self.variables[i]] - surr_before[self.variables[i]]
-
-        return base_stats
+            #opt_pg_stats[self.variables[i]] = [surr_before[self.variables[i]], new_surr[self.variables[i]], kl_dist[self.variables[i]]]
+        
+        opt_pg_stats = [surr_before, new_surr, kl_dist]
+        return base_stats, opt_pg_stats
     
     '''
     def simple_gradient_update(self, i, curr_params, search_direction, step_size,
