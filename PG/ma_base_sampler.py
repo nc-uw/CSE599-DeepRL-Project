@@ -7,7 +7,6 @@ Created on Wed May 23 21:46:46 2018
 """
 #include 'o' in paths
 #check propogation of 'action'
-import math
 import numpy as np
 import ma_tensor_utils as tensor_utils
 
@@ -21,17 +20,26 @@ def rev(price, mc, x):
 
 def do_rollout(N, T, L, policy):
     
-    amax = 60
+    b = 45
+    mc = 25
+    
+    amax = 30
     amin= 10
     m_slope = (amax-amin)/2
     c_intercept = (amax+amin)/2
+    
+    rmax= (pr(b, N, [amin]*(N-1)+[amax]) - mc) * amax
+    rmin = (pr(b, N, [amax]*(N-1)+[amax]) - mc) * amin
+    
+    m2_slope = (rmax-rmin)*2
+    c2_intercept = (rmax+rmin)/2
     
     #N=4
     #T=2
     #L=10
     #do something about 'variables'
     variables = [i for i in range(N)]
-    L = min(L, 100)
+    L = min(L, 1000)
     paths = []
     
     for ep in range(T):
@@ -40,10 +48,12 @@ def do_rollout(N, T, L, policy):
         observations = {} 
         inp_nn = {} 
         actions = {}        
+        mw_actions = {}        
         #agent_infos = []        
         p=0
         price = []
         rewards = {}
+        mw_rewards = {}
         agent_info = {}
         done = {}
         
@@ -51,55 +61,61 @@ def do_rollout(N, T, L, policy):
             observations[variables[i]] = np.array(0)
             inp_nn[variables[i]] = np.empty(0)
             actions[variables[i]] = np.empty(0)
+            mw_actions[variables[i]] = np.empty(0)
             agent_info[variables[i]] = []
             rewards[variables[i]] = np.empty(0)
+            mw_rewards[variables[i]] = np.empty(0)
             done[variables[i]] = np.empty(0)
         l = 0
 
         while l < L:
             #print('l',l)
-            action=[]
-            next_o = []
+            mw_action=[]
+            action = []
             for i in range(N):
                 inp = np.append(o,p)
                 if l == 0:
                     inp_nn[variables[i]] = np.array(inp)
                 else:
                     inp_nn[variables[i]] = np.vstack((inp_nn[variables[i]],np.array(inp)))
-                x, info = policy[i].get_action(inp)
+                a, info = policy[i].get_action(inp)
                 
                 
-                if x >= 1.:
-                    x = [1-1e-6]
-                elif x <= -1:
-                    x = [-1+1e-6]
+                if a >= 1.:
+                    a = [1-1e-6]
+                elif a <= -1:
+                    a = [-1+1e-6]
                  
                 #print ("network-output", yyy)                
                 
-                a = np.array(x)*m_slope + c_intercept
+                mw_a = np.array(a)*m_slope + c_intercept
                 
-                if a > amax:
-                    a = [amax]
-                elif a < amin:
-                    a = [amin]
+                if mw_a > amax:
+                    mw_a = [amax]
+                elif mw_a < amin:
+                    mw_a = [amin]
                 
                 #print ('a',a)
                 #print ('x',x)
-                action.append(a) #action for all agents
-                next_o.append(x)
+                mw_action.append(mw_a) #mw_action for all agents
+                action.append(a)
                 actions[variables[i]] = np.append(actions[variables[i]],a)
+                mw_actions[variables[i]] = np.append(actions[variables[i]],mw_a)
                 agent_info[i].append(info)
                         
+            mw_action = np.ravel(mw_action)
             action = np.ravel(action)
-            next_o = np.ravel(next_o)
-            #print ('action', action)
+            #print ('mw_action', mw_action)
             #print ('next_o', next_o)
-            p = pr(45., N, action)
+            p = pr(b, N, mw_action)
             price.append(p)
-            reward = rev(p, 25, action)
+            mw_reward = rev(p, mc, mw_action)
+            reward = (np.array(mw_reward) - c2_intercept)/m2_slope
+            #scale
             
             for i in range(N):
                 rewards[variables[i]] = np.append(rewards[variables[i]],reward[i])
+                mw_reward[variables[i]] = np.append(mw_rewards[variables[i]],mw_reward[i])
                 if l < L-1:
                     observations[variables[i]] = np.append(observations[variables[i]],action[i])
                     #done[variables[i]] = np.append(done[variables[i]],False)
@@ -107,7 +123,7 @@ def do_rollout(N, T, L, policy):
                 else:
                     #done[variables[i]] = np.append(done[variables[i]],True)
                     done[variables[i]] = True
-            o = next_o
+            o = action
             l += 1
             
         for i in range(N):
@@ -118,6 +134,8 @@ def do_rollout(N, T, L, policy):
             observations=observations,
             actions=actions,
             rewards=rewards,
+            mw_actions=mw_actions,
+            mw_rewards=mw_rewards,
             agent_info=agent_info,
             terminated=done
         )

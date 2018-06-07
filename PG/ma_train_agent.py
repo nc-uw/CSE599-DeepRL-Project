@@ -35,6 +35,7 @@ def train_agent(N, L, agent,
     stats_all = []
     optimization_stats_all = []
     paths_all = []
+    eval_paths_all = []
     train_curve_all = []
 
     for i in range(N):
@@ -68,5 +69,6 @@ def train_agent(N, L, agent,
         stats_all.append(stats)
         optimization_stats_all.append(optimization_stats)
         paths_all.append(paths)
+        eval_paths_all.append(eval_paths)
         train_curve_all.append(train_curve)
-    return stats_all, optimization_stats_all, paths_all, mean_pol_perf_all, train_curve_all
+    return stats_all, optimization_stats_all, paths_all, eval_paths_all, mean_pol_perf_all, train_curve_all

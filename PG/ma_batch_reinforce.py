@@ -40,7 +40,7 @@ class BatchREINFORCE:
         #new_dist_info = [LL, mean, policy[i].log_std]
         LR = self.policy[i].likelihood_ratio(new_dist_info, old_dist_info)
         surr = torch.mean(LR*adv_var)
-        print ('\n\nsurr', surr, 'LR', LR, 'LR_compute', torch.exp(new_dist_info[0] - old_dist_info[0]), 'new_dist_info', new_dist_info[0], 'old_dist_info', old_dist_info[0])
+        #print ('\n\nsurr', surr, 'LR', LR, 'LR_compute', torch.exp(new_dist_info[0] - old_dist_info[0]), 'new_dist_info', new_dist_info[0], 'old_dist_info', old_dist_info[0])
         return surr
 
     def kl_old_new(self, i, observations, actions):

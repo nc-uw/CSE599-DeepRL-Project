@@ -116,6 +116,7 @@ class MLP:
         return [action, {'mean': mean, 'log_std': self.log_std_val, 'evaluation': mean}]
 
     def mean_LL(self, i, observations, actions, model=None, log_std=None):
+        #print ('old_model?',model==self.old_model)
         model = self.model if model is None else model
         log_std = self.log_std if log_std is None else log_std
         

@@ -19,24 +19,24 @@ class MultiAgentNetwork:
         self.variables = [i for i in range(self.N)]
         self.policy = {}
         for i in range(self.N):
-            self.policy[self.variables[i]] = MLP(self.N, hidden_sizes=(64,64), seed=420)
+            self.policy[self.variables[i]] = MLP(self.N, hidden_sizes=(32,32), seed=888)
 
-SEED = 420
+SEED = 888
 N = 4
 L = 1e2
 baseline = LinearBaseline(N)
 MAN= MultiAgentNetwork(4)
 policy = MAN.policy
-agent = BatchREINFORCE(N, policy, baseline, learn_rate=0.1, seed=SEED)
+agent = BatchREINFORCE(N, policy, baseline, learn_rate=0.5, seed=SEED)
     
-stats_all, optimization_stats_all, paths_all, mean_pol_perf_all, train_curve_all = train_agent(N, L, agent=agent,
+stats_all, optimization_stats_all, paths_all, eval_paths_all, mean_pol_perf_all, train_curve_all = train_agent(N, L, agent=agent,
                 seed=SEED,
-                niter=100,
-                gamma=0.9,
-                gae_lambda=0.8,
+                niter=25,
+                gamma=0.3,
+                gae_lambda=None,
                 sample_mode='trajectories',
-                num_traj=20,
-                evaluation_rollouts=20)
+                num_traj=5,
+                evaluation_rollouts=5)
 
 #returns_poster = {}
 #actions_poster = {}
