@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri May 18 16:58:40 2018
-
-@author: nehachoudhary
-"""
 import numpy as np
 import copy
 import multiprocessing as mp

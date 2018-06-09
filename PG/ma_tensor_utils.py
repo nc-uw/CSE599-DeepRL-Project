@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed May 23 21:47:34 2018
-
-@author: nehachoudhary
-"""
-
 import operator
 import numpy as np
 

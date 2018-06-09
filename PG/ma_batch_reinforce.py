@@ -11,25 +11,28 @@ import scipy as sp
 import scipy.sparse.linalg as spLA
 import copy
 import torch
+import time as timer
 import torch.nn as nn
 from torch.autograd import Variable
 
 #samplers
 import ma_trajectory_sampler as trajectory_sampler
 import ma_process_samples as process_samples
-
+from ma_logger import DataLog
 class BatchREINFORCE:
     def __init__(self, N, policy, baseline,
                  learn_rate=0.01,
-                 seed=None):
+                 seed=None, save_logs=False):
 
         self.N = N
         self.policy = policy
         self.baseline = baseline
         self.alpha = learn_rate
         self.seed = seed
+        self.save_logs = save_logs
         self.running_score_init = None
         self.variables = [i for i in range(self.N)]
+        if save_logs: self.logger = DataLog()
 
     def CPI_surrogate(self, i, observations, actions, advantages):        
         advantages = advantages / (np.max(advantages) + 1e-8)
@@ -90,7 +93,8 @@ class BatchREINFORCE:
         if sample_mode is not 'trajectories' and sample_mode is not 'samples':
             print("sample_mode in NPG must be either 'trajectories' or 'samples'")
             quit()
-
+        
+        ts = timer.time()
         #edit for seed 
         #ensure N, T, L are fine
         if sample_mode is 'trajectories':
@@ -103,24 +107,38 @@ class BatchREINFORCE:
         #paths = trajectory_sampler.sample_paths_parallel(N, T, L, policy)
         ##whatis this below
         self.seed = self.seed + T if self.seed is not None else self.seed
+        
+        if self.save_logs:
+            self.logger.log_kv('time_sampling', timer.time() - ts)
+            
         # compute returns
         paths = process_samples.compute_returns(self.N, paths, gamma)
         # compute advantages
-        paths = process_samples.compute_advantages(self.N, paths, self.baseline, gamma, gae_lambda)
+        paths = process_samples.compute_advantages(self.N, paths, self.baseline, gamma, gae_lambda, normalize=True)
         #paths = process_samples.compute_advantages(N, paths, baseline, gamma=0.9, gae_lambda=0.98, normalize=False)
         #print ("\n\n\npaths", paths)
         # train from paths
         eval_statistics, optimization_stats = self.train_from_paths(paths)
         eval_statistics.append(T)
+        
         # fit baseline
-        error_before, error_after = self.baseline.fit(paths, return_errors=True)
-        return eval_statistics, optimization_stats, paths
+        if self.save_logs:
+            ts = timer.time()
+            error_before, error_after = self.baseline.fit(paths, return_errors=True)
+            self.logger.log_kv('time_VF', timer.time()-ts)
+            self.logger.log_kv('VF_error_before', error_before)
+            self.logger.log_kv('VF_error_after', error_after)
+            bl_error = [error_before, error_after]
+        else:
+            self.baseline.fit(paths, return_errors=True)
+            
+        return eval_statistics, optimization_stats, paths, bl_error
 
     # ----------------------------------------------------------
     def train_from_paths(self, paths):
         
         # Concatenate from all the trajectories
-        observations = {}  
+        observations = {}
         actions = {}
         advantages = {}
         path_returns = {}
@@ -153,6 +171,12 @@ class BatchREINFORCE:
             running_score[variables[i]] = mean_return[variables[i]] if running_score[variables[i]] is None else \
                                  0.9*running_score[variables[i]] + 0.1*mean_return[variables[i]]  # approx avg of last 10 iters
             '''
+        #if self.save_logs: self.log_rollout_statistics(paths)
+
+        # Keep track of times for various computations
+        t_opt = 0.0
+        ts = timer.time()
+        
         base_stats = [mean_return, running_score]
         # Optimization algorithm
         # --------------------------
@@ -182,6 +206,14 @@ class BatchREINFORCE:
             surr_improvement[self.variables[i]] = new_surr[self.variables[i]] - surr_before[self.variables[i]]
             #opt_pg_stats[self.variables[i]] = [surr_before[self.variables[i]], new_surr[self.variables[i]], kl_dist[self.variables[i]]]
         
+        t_opt += timer.time() - ts
+        # Log information
+        if self.save_logs:
+            self.logger.log_kv('alpha', self.alpha)
+            self.logger.log_kv('time_opt', t_opt)
+            self.logger.log_kv('kl_dist', kl_dist)
+            self.logger.log_kv('surr_improvement', surr_improvement)
+            self.logger.log_kv('running_score', running_score)
         opt_pg_stats = [surr_before, new_surr, kl_dist]
         return base_stats, opt_pg_stats
     
@@ -205,6 +237,17 @@ class BatchREINFORCE:
         return new_params, new_surr, kl_dist
     '''
     
+    def log_rollout_statistics(self, paths):
+        path_returns = [sum(p["rewards"]) for p in paths]
+        mean_return = np.mean(path_returns)
+        std_return = np.std(path_returns)
+        min_return = np.amin(path_returns)
+        max_return = np.amax(path_returns)
+        self.logger.log_kv('stoc_pol_mean', mean_return)
+        self.logger.log_kv('stoc_pol_std', std_return)
+        self.logger.log_kv('stoc_pol_max', max_return)
+        self.logger.log_kv('stoc_pol_min', min_return)
+        
     def simple_gradient_update(self, i, curr_params, search_direction, step_size, observations, actions, advantages):
         # This function takes in the current parameters, a search direction, and a step size
         # and computes the new_params =  curr_params + step_size * search_direction.

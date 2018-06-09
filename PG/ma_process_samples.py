@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed May 23 21:22:56 2018
-
-@author: nehachoudhary
-"""
-
 import numpy as np
 
 def compute_returns(N, paths, gamma):

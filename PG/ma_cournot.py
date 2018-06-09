@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri May 18 16:57:09 2018
-
-@author: nehachoudhary
-"""
 #%reset
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,49 +7,45 @@ from ma_batch_reinforce import BatchREINFORCE
 from ma_train_agent import train_agent
 
 class MultiAgentNetwork:
-    def __init__(self, N, reg_coeff=1e-5):
+    def __init__(self, N, seed, reg_coeff=1e-5):
         self.N = N
         self.variables = [i for i in range(self.N)]
         self.policy = {}
         for i in range(self.N):
-            self.policy[self.variables[i]] = MLP(self.N, hidden_sizes=(32,32), seed=888)
+            self.policy[self.variables[i]] = MLP(self.N, hidden_sizes=(128, 128), seed=SEED)
 
-SEED = 888
+
 N = 4
 L = 1e2
+SEED = 123
 baseline = LinearBaseline(N)
-MAN= MultiAgentNetwork(4)
+MAN= MultiAgentNetwork(N=4, seed=SEED)
 policy = MAN.policy
-agent = BatchREINFORCE(N, policy, baseline, learn_rate=0.5, seed=SEED)
+agent = BatchREINFORCE(N, policy, baseline, learn_rate=0.5, seed=SEED, save_logs=True)
+jobname = 'sim1'
     
-stats_all, optimization_stats_all, paths_all, eval_paths_all, mean_pol_perf_all, train_curve_all = train_agent(N, L, agent=agent,
-                seed=SEED,
-                niter=25,
-                gamma=0.3,
-                gae_lambda=None,
-                sample_mode='trajectories',
-                num_traj=5,
-                evaluation_rollouts=5)
+mw_action_all, mw_reward_all, mw_price_all = train_agent(N, L, agent, 
+seed=SEED, niter=25, gamma=0.0, gae_lambda=None, sample_mode='trajectories', num_traj=10, evaluation_rollouts=10)
 
-#returns_poster = {}
-#actions_poster = {}
+returns_poster = {}
+actions_poster = {}
 price_poster = {}
 variables = [i for i in range(N)]
 for i in range(N):
-    #returns_poster[variables[i]] = np.empty(0)
-    #actions_poster[variables[i]] = np.empty(0)
+    returns_poster[variables[i]] = np.empty(0)
+    actions_poster[variables[i]] = np.empty(0)
     price_poster[variables[i]] = np.empty(0)
 
-'''
+
 for i in range(N):
     for stats in stats_all:
        returns_poster[variables[i]] = np.append(returns_poster[variables[i]], stats[0][variables[i]])
-'''
+
     
 for i in range(N):
-    for p in paths_all:
+    for p in eval_paths_all:
         for q in p:
-            #actions_poster[variables[i]] = np.append(actions_poster[variables[i]], np.mean(q['actions'][variables[i]]))
+            actions_poster[variables[i]] = np.append(actions_poster[variables[i]], np.mean(q['actions'][variables[i]]))
             for r in q['o'][variables[i]][-1]:
                 price_poster[variables[i]] = np.append(price_poster[variables[i]], np.mean(r))
 

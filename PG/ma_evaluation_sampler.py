@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed May 23 21:46:46 2018
-
-@author: nehachoudhary
-"""
 #include 'o' in paths
 #check propogation of 'action'
 import numpy as np
@@ -23,16 +16,22 @@ def do_evaluation_rollout(N, T, L, policy):
     b = 45
     mc = 25
     
-    amax = 30
+    amax = 40
     amin= 10
     m_slope = (amax-amin)/2
     c_intercept = (amax+amin)/2
     
     rmax= (pr(b, N, [amin]*(N-1)+[amax]) - mc) * amax
-    rmin = (pr(b, N, [amax]*(N-1)+[amax]) - mc) * amin
+    rmin = (pr(b, N, [amax]*(N-1)+[amin]) - mc) * amin
     
     m2_slope = (rmax-rmin)*2
     c2_intercept = (rmax+rmin)/2
+    
+    pmax= pr(b, N, [amin]*N)
+    pmin = pr(b, N, [amax]*N)
+    
+    m3_slope = (pmax-pmin)*2
+    c3_intercept = (pmax+pmin)/2
     
     #N=4
     #T=2
@@ -52,6 +51,7 @@ def do_evaluation_rollout(N, T, L, policy):
         #agent_infos = []        
         p=0
         price = []
+        mw_price=[]
         rewards = {}
         mw_rewards = {}
         agent_info = {}
@@ -79,7 +79,7 @@ def do_evaluation_rollout(N, T, L, policy):
                 else:
                     inp_nn[variables[i]] = np.vstack((inp_nn[variables[i]],np.array(inp)))
                 _, info = policy[i].get_action(inp)
-                a = info['evaluation']                
+                a = info['evaluation']                            
                 
                 if a >= 1.:
                     a = [1-1e-6]
@@ -107,9 +107,12 @@ def do_evaluation_rollout(N, T, L, policy):
             action = np.ravel(action)
             #print ('mw_action', mw_action)
             #print ('next_o', next_o)
-            p = pr(b, N, mw_action)
-            price.append(p)
-            mw_reward = rev(p, mc, mw_action)
+            
+            mw_p = pr(b, N, mw_action)
+            mw_price.append(mw_p)
+            p = (np.array(mw_p) - c3_intercept)/m3_slope
+            
+            mw_reward = rev(mw_p, mc, mw_action)
             reward = (np.array(mw_reward) - c2_intercept)/m2_slope
             #scale
             
@@ -145,9 +148,11 @@ def do_evaluation_rollout(N, T, L, policy):
     print("====== Evaluation finished ======")  
     print ('eval_action', action)
     print ('eval_reward', reward)
+    print ('eval_price', p)
     print ('eval_mw_action', mw_action)
     print ('eval_mw_reward', mw_reward)
-    return paths
+    print ('eval_mw_price', mw_p)
+    return mw_action, mw_reward, mw_p, paths
 
 def do_evaluation_rollout_star(args_list):
     return do_evaluation_rollout(*args_list)

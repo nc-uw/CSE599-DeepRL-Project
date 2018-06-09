@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri May 18 16:51:58 2018
-
-@author: nehachoudhary
-"""
-
 from ma_trajectory_sampler import sample_paths
 import numpy as np
 import os
@@ -37,6 +29,9 @@ def train_agent(N, L, agent,
     paths_all = []
     eval_paths_all = []
     train_curve_all = []
+    mw_action_all = []
+    mw_reward_all = []
+    mw_price_all = []
 
     for i in range(N):
         best_policy[variables[i]] = copy.deepcopy(agent.policy[variables[i]])
@@ -46,20 +41,21 @@ def train_agent(N, L, agent,
 
     for i in range(niter):
         print("......................................................................................")
-        print("ITERATION : %i " % i)
+        print("\n\nITERATION : %i " % i)
         for j in range(N):
             if train_curve[variables[j]][i-1] > best_perf[variables[j]]:
                 best_policy[variables[j]] = copy.deepcopy(agent.policy[variables[j]])
                 best_perf[variables[j]] = train_curve[variables[j]][i-1]
         args = dict(T=T, sample_mode=sample_mode, gamma=gamma, gae_lambda=gae_lambda)
-        stats, optimization_stats, paths = agent.train_step(**args)
-        print ("\n\n\nstats", stats)
-        print ("\n\n\nopt pg stats", optimization_stats)
+        stats, optimization_stats, paths, bl_error = agent.train_step(**args)
+        print ("\nstats", stats)
+        print ("\nopt pg stats", optimization_stats)
+        print ("\nopt bl_error", bl_error)
         for j in range(N):
             train_curve[variables[j]][i] = stats[0][variables[j]]
         if evaluation_rollouts is not None and evaluation_rollouts > 0:
             print("Performing evaluation rollouts ........")
-            eval_paths = sample_paths(N, T, L, policy=agent.policy, mode='evaluation')
+            mw_action, mw_reward, mw_price, eval_paths = sample_paths(N, T, L, policy=agent.policy, mode='evaluation')
             for j in range(N):        
                 mean_pol_perf[variables[j]] = np.mean([np.sum(path['rewards'][variables[j]]) for path in eval_paths])
         print ('mean_pol_perf', mean_pol_perf)
@@ -71,4 +67,8 @@ def train_agent(N, L, agent,
         paths_all.append(paths)
         eval_paths_all.append(eval_paths)
         train_curve_all.append(train_curve)
-    return stats_all, optimization_stats_all, paths_all, eval_paths_all, mean_pol_perf_all, train_curve_all
+        mw_action_all.append(mw_action)
+        mw_reward_all.append(mw_reward)
+        mw_price_all.append(mw_price)
+    #return stats_all, optimization_stats_all, paths_all, eval_paths_all, mean_pol_perf_all, train_curve_all
+    return mw_action_all, mw_reward_all, mw_price_all
